@@ -17,6 +17,7 @@ export async function getAuth() {
       const { betterAuth } = await import('better-auth');
       const { mongodbAdapter } = await import('@better-auth/mongo-adapter');
       const { MongoClient } = await import('mongodb');
+      const { bearer } = await import('better-auth/plugins');
 
       const client = new MongoClient(mongoUri);
       const db = client.db();
@@ -28,6 +29,9 @@ export async function getAuth() {
           autoSignIn: true,
         },
         secret: process.env.BETTER_AUTH_SECRET || 'aetheris-super-secret-key-better-auth-1298473',
+        plugins: [
+          bearer()
+        ]
       });
       console.log('Better Auth instance initialized successfully with MongoDB.');
       return authInstance;
