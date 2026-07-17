@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { getAuth } from '../config/auth';
 import { User } from '../models/User';
-import { auth } from '../config/auth';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'aetheris-super-secret-key-1298473';
 
@@ -21,6 +21,11 @@ export async function registerUser(req: Request, res: Response): Promise<void> {
 
   try {
     console.log(`[Better Auth] Registering user: ${email}`);
+    const auth = await getAuth();
+    if (!auth) {
+      res.status(500).json({ message: 'Authentication service is not configured or failed to initialize.' });
+      return;
+    }
     const response = await auth.api.signUpEmail({
       body: {
         email,
@@ -55,6 +60,11 @@ export async function loginUser(req: Request, res: Response): Promise<void> {
 
   try {
     console.log(`[Better Auth] Authenticating user: ${email}`);
+    const auth = await getAuth();
+    if (!auth) {
+      res.status(500).json({ message: 'Authentication service is not configured or failed to initialize.' });
+      return;
+    }
     const response = await auth.api.signInEmail({
       body: {
         email,
