@@ -6,8 +6,7 @@ export async function connectDB(): Promise<void> {
   const mongoUri = process.env.MONGO_URI;
   
   if (!mongoUri || mongoUri.includes('আপনার_মঙ্গোডিবি_ইউআরএল_এখানে_দিন')) {
-    console.error('ERROR: MONGO_URI is missing or placeholder. Server requires a database connection to operate.');
-    process.exit(1);
+    throw new Error('MONGO_URI is missing or placeholder. Please configure MONGO_URI in your environment variables.');
   }
 
   try {
