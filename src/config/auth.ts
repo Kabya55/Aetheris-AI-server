@@ -13,11 +13,13 @@ export async function getAuth() {
     }
 
     try {
-      // Dynamically import ES modules (better-auth is ESM-only)
-      const { betterAuth } = await import('better-auth');
-      const { mongodbAdapter } = await import('@better-auth/mongo-adapter');
-      const { MongoClient } = await import('mongodb');
-      const { bearer } = await import('better-auth/plugins');
+      // Helper to dynamically import ESM modules from CommonJS without TS transpilation
+      const importESM = (specifier: string) => new Function('specifier', 'return import(specifier)')(specifier);
+
+      const { betterAuth } = await importESM('better-auth');
+      const { mongodbAdapter } = await importESM('@better-auth/mongo-adapter');
+      const { MongoClient } = await importESM('mongodb');
+      const { bearer } = await importESM('better-auth/plugins/bearer');
 
       const client = new MongoClient(mongoUri);
       const db = client.db();
