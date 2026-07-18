@@ -52,8 +52,7 @@ const tripSchema = new Schema(
       default: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80',
     },
     createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
+      type: String,
       required: false, // Optional so we can seed general system itineraries
     },
     tags: {
