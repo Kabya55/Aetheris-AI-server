@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { getAuth } from '../config/auth';
+import mongoose from 'mongoose';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -10,40 +10,69 @@ export interface AuthRequest extends Request {
 }
 
 export async function protect(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
-  let token: string | undefined;
+  let sessionToken = '';
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    sessionToken = authHeader.split(' ')[1];
+  } else {
+    // Extract from cookies
+    const cookieHeader = req.headers.cookie;
+    if (cookieHeader) {
+      const match = cookieHeader.match(/better-auth\.session_token=([^;]+)/);
+      if (match) {
+        sessionToken = match[1];
+      }
+    }
   }
 
-  if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token provided' });
+  if (!sessionToken) {
+    res.status(401).json({ message: 'Unauthorized: No session token found' });
     return;
   }
 
+  sessionToken = decodeURIComponent(sessionToken);
+  if (sessionToken.includes('.')) {
+    sessionToken = sessionToken.split('.')[0];
+  }
+
   try {
-    const auth = await getAuth();
-    if (!auth) {
-      res.status(500).json({ message: 'Authentication service is offline' });
+    const db = mongoose.connection.db;
+    if (!db) {
+      res.status(500).json({ message: 'Database connection not ready' });
       return;
     }
 
-    const session = await auth.api.getSession({
-      headers: req.headers,
+    // Find session directly in database
+    const session = await db.collection('session').findOne({ token: sessionToken });
+
+    if (!session || new Date() > new Date(session.expiresAt)) {
+      res.status(401).json({ message: 'Unauthorized: Expired or invalid session' });
+      return;
+    }
+
+    // Find user directly in database
+    const userIdObj = typeof session.userId === 'string' ? new mongoose.Types.ObjectId(session.userId) : session.userId;
+    const user = await db.collection('user').findOne({
+      $or: [
+        { _id: session.userId },
+        { _id: userIdObj },
+        { _id: session.userId.toString() }
+      ]
     });
 
-    if (!session) {
-      res.status(401).json({ message: 'Not authorized, invalid session' });
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
       return;
     }
 
     req.user = {
-      id: session.user.id,
-      email: session.user.email,
-      role: session.user.role || 'user',
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role || 'user',
     };
     next();
-  } catch (error) {
-    res.status(401).json({ message: 'Not authorized, session validation failed' });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || 'Server Error' });
   }
 }
