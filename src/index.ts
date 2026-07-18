@@ -11,6 +11,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { connectDB } from './config/db';
+import { ensureDbConnected } from './middleware/dbMiddleware';
 import tripRoutes from './routes/tripRoutes';
 import aiRoutes from './routes/aiRoutes';
 
@@ -31,6 +32,7 @@ app.use(cors({
   exposedHeaders: ['set-auth-token']
 }));
 app.use(express.json());
+app.use(ensureDbConnected);
 
 // Routes
 app.use('/api/trips', tripRoutes);
