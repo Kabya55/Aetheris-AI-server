@@ -4,7 +4,7 @@ import { getAuth } from '../config/auth';
 const router = Router();
 
 // Catch-all route to delegate to Better Auth node handler
-router.all('*', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+router.all('*splat', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const auth = await getAuth();
     if (!auth) {
